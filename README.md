@@ -19,11 +19,11 @@ Installation
 ====
 -方式1：pip install vitu
 
--方式2：访问 https://github.com/Wanxiang-Blockchain-Hackathon-2020/N01-Vitu/ 下载安装
+-方式2：访问 https://github.com/vitutech/vitu 下载安装
 
 Quick Start
 ======
-1 策略教程：在https://vitu.ai 上注册，《等你来学》栏目中查找vitu策略教程，其中包含数据下载和策略编辑方法
+1 策略教程：在https://vitu.ai 上注册，《等你来学》栏目中查找教程[策略框架【Vitu开源给你看】](https://vitu.ai/course/105231114968286336)，其中包含数据下载和策略编辑方法
 
 2 如何回测：
 
