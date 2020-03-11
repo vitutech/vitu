@@ -27,6 +27,8 @@ for root, dirs, files in os.walk(root_dir):
 
             if root != root_dir:
                 py_packages.add(root.replace(os.path.sep, '.'))
+py_packages.add('vitudata')
+py_packages.add('vitudata.apis')            
 print(py_modules)
 print(py_packages)
 setup(
@@ -35,7 +37,7 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='1.0.0',
+    version='1.1.0',
 
     description='VITU/Halo - backtest framework',
     long_description='VITU/Halo - backtest framework',

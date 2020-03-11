@@ -16,7 +16,6 @@ import h5py
 import sys
 
 import pytz
-# import redis
 import six
 import numpy as np
 import pandas as pd
@@ -35,15 +34,16 @@ __all__ = [
 ]
 
 def get_path(exchange, symbol, freq, year):
-    dir = Config.h5_root_dir() + '/' + exchange + '/' + freq + '/' + symbol.replace('/', '')
-    dir = dir.lower()
+    dir = Config.h5_root_dir() + '/' + exchange.lower() + '/' + freq.lower() + '/' + symbol.replace('/', '')
+    # dir = dir.lower()
     if not os.path.exists(dir):
         os.makedirs(dir, 0o755)
     return dir + '/' + str(year)
 
 def __check_symbol_exists(symbol, exchange, freq):
-    dir = Config.h5_root_dir() + '/' + exchange + '/' + freq + '/' + symbol.replace('/', '')
-    dir = dir.lower()
+    dir = Config.h5_root_dir() + '/' + exchange.lower()+ '/' + freq.lower() + '/' + symbol.replace('/', '')
+    # dir = dir.lower()
+    print(dir)
     return os.path.exists(dir)
 
 

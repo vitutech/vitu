@@ -9,6 +9,7 @@ import datetime
 import time
 import matplotlib.pyplot as plt
 import xlwt
+import os 
 
 from vitu.account.account_manager import AccountManager
 from vitu.trade.portfoilo.portfolio import Portfolio
@@ -194,7 +195,10 @@ class Strategy(object):
             else:
                  sheet1.write(1,c,value)         
             c+=1
-        workbook.save('D:/simple_report.xls')     #存储在D盘中
+        root1=os.getcwd()    #获得当前目录路径，用来存放回测报告
+        adress1=root1+'/'+'simple_report.xls' #保存报告的地址
+        print(adress1)
+        workbook.save(adress1)     
         #净值图形输出
         plt.plot(simple_report["cumulative_returns"])
         plt.title("Cumulative_returns",fontsize='large')

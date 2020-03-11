@@ -8,7 +8,7 @@ from matplotlib.font_manager import FontProperties
 from vitu.configuration import Config
 from vitu.utils.log_utils import logger
 # from vitu.data_api import API
-# import vitu.vitudata as vitudata 
+
 
 
 log = logger
