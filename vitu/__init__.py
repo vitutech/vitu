@@ -1,16 +1,10 @@
-'''/*---------------------------------------------------------------------------------------------
- *  Copyright (c) VituTech. All rights reserved.
- *  Licensed under the Apache License 2.0. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-'''
 import os
 from matplotlib.font_manager import FontProperties
+# from vitu.data_api import API
 from vitu.configuration import Config
 from vitu.utils.log_utils import logger
-# from vitu.data_api import API
 
-
-
+# api = API(Config.tushare_token())s
 log = logger
 
 font = None

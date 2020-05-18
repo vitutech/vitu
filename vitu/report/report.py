@@ -10,17 +10,18 @@ import math
 import numpy as np
 from vitu.utils.date_utils import str2datetime, str2timestamp, get_dates_length
 
-
 class Report(object):
     def __init__(self, portfolio=None):
         self.rebalance_history = portfolio.rebalance_history
         self.index_key = 'chainext-index-' + portfolio.strategy.benchmark
-        self.benchmark = portfolio.context.cacher.data[self.index_key]
+        
         self.context = portfolio.context
         self.refresh_rate = portfolio.strategy.refresh_rate
 
         self.dates = [date for date in self.rebalance_history.keys()]
-        self.dates_length = get_dates_length(self.dates[0], self.dates[-1])  # 计算年化时，算date_length
+        benchmark1= portfolio.context.cacher.data[self.index_key]
+        self.benchmark=benchmark1[(benchmark1['timestamp']>=self.dates[0])&(benchmark1['timestamp']<=self.dates[-1])]
+        self.dates_length = get_dates_length(self.dates[0], self.dates[-1])  # 计算年化时，算date_length,只算日长度
         # self.dates = None
         self.values = None
         self.bm_values = None
@@ -38,11 +39,16 @@ class Report(object):
     def get_benchmark_values(self, dates):
         # 不管几点，要对应整点的的日级数据
         # start = str_to_timestamp(str((str_to_datetime(dates[0]) - datetime.timedelta(days=self.refresh_rate)).date()))
-        start = str2timestamp(str((str2datetime(dates[0]) - datetime.timedelta(days=1)).date()))
-        end = str2timestamp(str((str2datetime(dates[-1])).date()))
-        bm_values = self.benchmark.loc[(self.benchmark["timestamp"] >= start) & (self.benchmark["timestamp"]<= end)]
-        # bm_values = bm_values.loc[bm_values.index[::self.refresh_rate]]['close'].tolist()
-        bm_values = bm_values['close'].tolist()
+        if self.context.frequency in ['d','1d','day','1day']:
+            start = str((str2datetime(dates[0]) - datetime.timedelta(days=self.refresh_rate)))  
+            end = str((str2datetime(dates[-1])))
+            bm_values = self.benchmark.loc[(self.benchmark["timestamp"] >= start) & (self.benchmark["timestamp"]<= end)]
+            bm_values = bm_values.loc[bm_values.index[::self.refresh_rate]]['close'].tolist()
+        else:
+            start = str((str2datetime(dates[0]) - datetime.timedelta(days=1)))  #benchmarkvalue只取对应基准的日价值，所以每日值都取
+            end = str((str2datetime(dates[-1])))
+            bm_values = self.benchmark.loc[(self.benchmark["timestamp"] >= start) & (self.benchmark["timestamp"]<= end)]
+            bm_values = bm_values['close'].tolist()
         return bm_values
 
     def get_relative_returns(self, values):

@@ -44,7 +44,7 @@ def get_total_dates(frequency, refresh_rate, trigger_time, start, end):
     start_date = str2datetime(start)
     end_date = str2datetime(end)
     date = list()
-    if frequency in ['d','day','daily']:
+    if frequency in ['d','1d','day','daily']:
         while True:
             if start_date <= end_date:
                 date.append(str(start_date))
@@ -52,7 +52,7 @@ def get_total_dates(frequency, refresh_rate, trigger_time, start, end):
                 # start_date += datetime.timedelta(days=1)
             else:
                 break
-    elif frequency in ['m','min','minute']:
+    elif frequency in ['m','1m','min','minute']:
         while True:
             if start_date <= end_date:
                 date.append(str(start_date))
@@ -60,7 +60,26 @@ def get_total_dates(frequency, refresh_rate, trigger_time, start, end):
                 # start_date += datetime.timedelta(minutes=1)
             else:
                 break
+    elif frequency in ['5m','5min','5minutes']:
+        while True:
+            if start_date <= end_date:
+                date.append(str(start_date))
+                start_date += datetime.timedelta(minutes=5*refresh_rate)
+                # start_date += datetime.timedelta(minutes=1)
+            else:
+                break
     return date
+def get_day_dates(start_date, end_date,refresh_rate=1):
+    start_date = str2datetime(start_date)
+    end_date = str2datetime(end_date)
+    daydate_list = list()
+    while True:
+        if start_date <= end_date:
+            daydate_list.append(str(start_date))
+            start_date += datetime.timedelta(days=refresh_rate)
+        else:
+            break
+    return daydate_list
 
 def get_total_timestamps(start_date, end_date):
     start_date = str2datetime(start_date)

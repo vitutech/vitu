@@ -36,7 +36,7 @@ class AccountInfo(object):
 
     def __repr__(self):
         content = ', '.join(['{}: {{}}'.format(item) for item in self.__slots__]).format(
-            self.name, self.account_type, self.position_base)
+            self.name,self.exchange,self.account_type, self.position_base)
         return 'AccountInfo({})'.format(content)
 
 

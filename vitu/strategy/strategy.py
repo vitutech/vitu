@@ -1,8 +1,3 @@
-'''/*---------------------------------------------------------------------------------------------
- *  Copyright (c) VituTech. All rights reserved.
- *  Licensed under the Apache License 2.0. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/
-'''
 import traceback
 import pandas as pd
 import datetime
@@ -16,10 +11,17 @@ from vitu.trade.portfoilo.portfolio import Portfolio
 from vitu.trade.position.portfolio_position import PortfolioPosition
 from vitu.report.simple_report import SimpleReport
 from vitu.report.complete_report import CompleteReport
-from vitu.utils.date_utils import str2timestamp, get_total_dates, str2datetime
+from vitu.utils.date_utils import str2timestamp, get_total_dates, str2datetime,get_day_dates
 from vitu.utils.log_utils import logger
 from vitu.utils.min_qty import get_min_order
 from vitu.utils.output_utils import output
+import numpy as np
+ 
+np.set_printoptions(threshold=100000)
+pd.set_option('display.max_columns',100000)
+pd.set_option('display.width', 100000)
+pd.set_option('display.max_colwidth',100000)
+
 
 class Strategy(object):
     def __new__(cls, *args, **kwargs):
@@ -63,10 +65,11 @@ class Strategy(object):
         self.total_dates = None
         self.strategy_dates = None
 
-    def _initialize(self, strategy=None, start=None, end=None, commission=None):
+    def _initialize(self, strategy=None, start=None, end=None, timezone=None, commission=None):
         self.start = start
         self.end = end
         self.commission = commission
+        self.timezone=timezone
         self.portfolio = Portfolio(strategy, start, end, commission,
                                    self.frequency, self.refresh_rate, self.trigger_time)
         self.context = self.portfolio.context
@@ -83,7 +86,7 @@ class Strategy(object):
             min_order_qty, min_order_amount = get_min_order(exchange, symbol)
             self.context.min_order[exchange][symbol] = {'min_order_qty':min_order_qty,
                                                              'min_order_amount':min_order_amount}
-        # print(self.context.min_order)
+
 
         # 记录universe所有的asset
         self.universe_assets = list()
@@ -105,9 +108,13 @@ class Strategy(object):
 
         self.total_dates = get_total_dates(self.frequency, 1, self.trigger_time, self.start, self.end)
         self.strategy_dates = get_total_dates(self.frequency, self.refresh_rate, self.trigger_time, self.start, self.end)
+        if self.frequency in ['d','1d','day','1day']:
+           self.day_date=get_day_dates(self.start, self.end,self.refresh_rate)
+        else:
+           self.day_date=get_day_dates(self.start, self.end)
         # 先输出report的dates信息，画图用
         output({"display_type": "strategy",
-                "dates":self.total_dates})
+              "dates":self.day_date})
 
         try:
             self.initialize(self.context)
@@ -122,23 +129,20 @@ class Strategy(object):
         current_date = clock.current_date
         logger.current_date = current_date
         current_timestamp = clock.current_timestamp
-        print(current_date)
+        # print(current_date)
+        prebars=clock.pre_bar
 
-
-        pre_start = str(str2datetime(self.start) - datetime.timedelta(days=30))
+        pre_start = str(str2datetime(self.start) - datetime.timedelta(days=prebars))
         try:
-            start1 = time.time()
             if not self.cache_data:
                 self.cache_data = self.context.prepare_data(self.universe, self.all_assets, self.benchmark,
-                                                                  self.frequency, pre_start, self.end)
-            # logger.info('【prepare_data时间：】：{} s'.format(str(time.time() - start1)[:5]))
+                                                                  self.frequency, pre_start, self.end, self.timezone)
         except Exception:
             output({"display_type": "error",
                     "error_msg": traceback.format_exc()})
             return 1
 
         # 记录初始持仓
-        start2 = time.time()
         start = self.start + ' ' + self.trigger_time[0] if self.trigger_time else self.start # 只支持一个trigger_time
         if current_timestamp == str2timestamp(start):
             for name, account in self.portfolio.accounts.items():
@@ -175,12 +179,21 @@ class Strategy(object):
 
         # logger.info('【_handle_data耗时】：{} s'.format(str(time.time() - start2)[:5]))
         # print("******************************************************************", end='\n\n')
-    #策略报告
+
     def simple_report(self):
         report = SimpleReport(self.portfolio)
         simple_report = report.run()
         output(simple_report)
 
+    def complete_report(self):
+        report = CompleteReport(self.portfolio)
+        complete_report = report.run()
+        output(complete_report)
+
+    def simplereport_excel(self):
+        report = SimpleReport(self.portfolio)
+        simple_report = report.run()
+        output(simple_report)
         # 回测报告以excel表格形式输出
         workbook=xlwt.Workbook(encoding='utf-8')
         sheet1=workbook.add_sheet('sheet1',cell_overwrite_ok=True)
@@ -203,17 +216,9 @@ class Strategy(object):
         plt.plot(simple_report["cumulative_returns"])
         plt.title("Cumulative_returns",fontsize='large')
         plt.show()
-
-
-
-
-    def complete_report(self):
-        report = CompleteReport(self.portfolio)
-        complete_report = report.run()
-        # complete_report的输出可根据需要调整
-        # output(complete_report) 
-
+        
     
+
 if __name__ == '__main__':
     import time
     a = time.time()

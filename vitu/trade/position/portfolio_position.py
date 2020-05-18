@@ -8,7 +8,7 @@ class PortfolioPosition():
         self.context = context
         self.asset = asset
         self.accounts = accounts
-
+          
         self.asset_class = None
         self.total_amount = 0
         self.value = 0
@@ -21,18 +21,19 @@ class PortfolioPosition():
 
         self.consis_of = dict()
 
-
     def detail(self):
         for account in self.accounts.values():
             account = account.to_dict()
             if self.asset in account['current_position'].keys():
                 self.asset_class = account['asset_class']
-                self.total_amount += account['current_position'][self.asset].detail()['amount']
-                self.value = account['current_position'][self.asset].detail()['value']
-                self.total_qty += account['current_position'][self.asset].detail()['total']
-                self.avg_cost_btc_total += account['current_position'][self.asset].detail()['avg_cost_btc']
-                self.avg_cost_usdt_total += account['current_position'][self.asset].detail()['avg_cost_usdt']
-                self.consis_of[account['name']] = account['current_position'][self.asset].detail()
+                temp1=account['current_position'][self.asset].detail()
+                self.consis_of[account['name']] =temp1 
+                self.total_amount += temp1['amount']
+                self.value = temp1['value']
+                self.total_qty += temp1['total']
+                self.avg_cost_btc_total += temp1['avg_cost_btc']
+                self.avg_cost_usdt_total += temp1['avg_cost_usdt']
+                
         self.avg_cost_btc = self.avg_cost_btc_total/len(self.consis_of)
         self.avg_cost_usdt = self.avg_cost_usdt_total/len(self.consis_of)
 

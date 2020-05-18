@@ -49,12 +49,35 @@ class SpotPosition(Position):
         if not self._context:
             return 0
         else:
-            date = self._context.clock.current_date
-            current_timestamp = str2timestamp(str(date.date()))  # 只关注date() time()舍掉
-            # current_timestamp = datetime.datetime.timestamp(date)
-            cmc_key = 'cmc-spot-' + self.asset + 'usd'
-            df = self.context.cacher.data[cmc_key]
-            return df.loc[(df['timestamp'] == current_timestamp)]['close'].tolist()[0]
+            # date = self._context.clock.current_date
+            # current_timestamp = str2timestamp(str(date.date()))  # 只关注date() time()舍掉
+            # current_timestamp = str(datetime.datetime.fromtimestamp(current_timestamp))
+            # cmc_key = 'cmc-spot-' + self.asset + 'usd'
+            # df = self.context.cacher.data[cmc_key]
+            # return df.loc[(df['timestamp'] == current_timestamp)]['close'].tolist()[0]
+
+            try :
+                freq1=self._context.frequency
+                if freq1 in ['d','1d','day','1day']:
+                    last_bar_index = self._context.clock.bars_start + self._context.clock.pre_bar  # date取日级数据
+                elif freq1 in ['m','1m','min','1minute']:
+                    last_bar_index = self._context.clock.bars_start + self._context.clock.pre_bar*1440
+                elif freq1 in ['5m','5min','5minutes']:
+                    last_bar_index = self._context.clock.bars_start + self._context.clock.pre_bar*288
+                if self.asset == 'usdt':
+                   return 1.00
+                else:
+                    if hasattr(self._context,'symbol'):
+                        cmc_key = self._context.symbol.split('.')[1] + '-spot-' + self._context.symbol.split('.')[0].replace('/', '').lower()
+                    else:
+                        cmc_key=list(self._context.min_order.keys())[0]+ '-spot-' + self.asset+'usdt'
+                    df = self.context.cacher.data[cmc_key]
+                    return df.loc[last_bar_index,'close']
+            except Exception as e:
+                daybar=self._context.clock.day_bar+self._context.clock.pre_bar
+                cmc_key = 'cmc-spot-' + self.asset + 'usd'
+                df = self.context.cacher.data[cmc_key]
+                return df.loc[daybar,'close']
 
     @property
     def total(self):
@@ -147,11 +170,17 @@ class SpotPosition(Position):
                                       (relative_currency.avg_cost_usdt * trade['qty'])) / self.available
 
     def detail(self):
+        tempvalue=0
+        tempamout=0
+        tempvalue=round(self.value, 6)
+        if tempvalue:
+           tempamout=self.total * tempvalue
+
         return {
             'asset_class':self.asset_class,
             'asset':self.asset,
-            'amount':round(self.amount, 6),
-            'value':round(self.value, 6),  #
+            'value':tempvalue, 
+            'amount':round(tempamout, 6),
             'total':round(self.total, 6),
             'available':round(self.available, 6),
             'frozen':self.frozen,

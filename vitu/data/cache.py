@@ -16,10 +16,10 @@ class DataCache(object):
         :param end_date: datetime
         :return: dataframe
         """
-        start_ts = str2timestamp(str(start.date()))
-        end_ts = str2timestamp(str(end.date()))
+        # start_ts = str(start)
+        # end_ts = str(end)
         total_data = self.data[k_lines_key]
-        data = total_data.loc[(total_data["timestamp"] >= start_ts) & (total_data["timestamp"] <= end_ts)][attributes]
+        data = total_data.loc[start:end-1,attributes] #total_data.iloc[start:end,:][attributes] 
         return data
 
 

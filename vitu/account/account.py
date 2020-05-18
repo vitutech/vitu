@@ -56,10 +56,10 @@ class Account(object):
         # 低于current_price才能卖出，高于current_price才能买入
         current_price = self.context.get_price(symbol_exchange)
         if price > current_price:
-            logger.warning('限价单价格需要小于等于市场价才能卖出,卖出失败.')
+            logger.debug('限价单价格需要小于等于市场价才能卖出,卖出失败.')
             return
         if base_currency not in self.current_position.keys():
-            logger.warning('没有 {} 资产,卖出失败.'.format(base_currency))
+            # logger.debug('没有 {} 资产,卖出失败.'.format(base_currency))
             return
 
         qty = math.floor(qty*100000000)/100000000
@@ -68,16 +68,16 @@ class Account(object):
 
         # 判断是否有足够资金下单
         if self.current_position[base_currency].detail()['available'] < qty:
-            logger.warning('{} 不足,卖出失败.'.format(base_currency))
+            # logger.debug('{} 不足,卖出失败.'.format(base_currency))
             return
         # 判断是否小于最下下单精度、最小下单金额
         min_order_qty = self.context.min_order[exchange][symbol.lower()]['min_order_qty']
         min_order_amount = self.context.min_order[exchange][symbol.lower()]['min_order_qty']
         if qty < min_order_qty:
-            logger.warning('不足下单最小精度 {} {},卖出失败.'.format('%.6f'%min_order_qty,base_currency.upper()))
+            logger.debug('不足下单最小精度 {} {},卖出失败.'.format('%.6f'%min_order_qty,base_currency.upper()))
             return
         if amount < min_order_amount:
-            logger.warning('不足下单最小金额 {} {},卖出失败.'.format('%.6f'%min_order_amount,quote_currency.upper()))
+            logger.debug('不足下单最小金额 {} {},卖出失败.'.format('%.6f'%min_order_amount,quote_currency.upper()))
             return
 
         # 下单
@@ -88,7 +88,7 @@ class Account(object):
         match_engine(self.current_position, self.context, order)
         if not self.orders or self.orders[0]['create_time'] == self.context.current_datetime():
             self.orders.append(order.detail())
-        logger.info('{} 卖出成功! 价格:{} 数量:{}'.format(base_currency, price, qty))
+        # logger.debug('{} 卖出成功! 价格:{} 数量:{}'.format(base_currency, price, qty))
         # return order.detail()
         return order_id
 
@@ -110,10 +110,10 @@ class Account(object):
         # 低于current_price才能卖出，高于current_price才能买入
         current_price = self.context.get_price(symbol_exchange)
         if price < current_price:
-            logger.warning('限价单价格需要大于等于市场价才能买入,买入失败.')
+            logger.debug('限价单价格需要大于等于市场价才能买入,买入失败.')
             return
         if quote_currency not in self.current_position.keys():
-            logger.warning('没有 {} 资产,买入失败.'.format(quote_currency))
+            logger.debug('没有 {} 资产,买入失败.'.format(quote_currency))
             return
 
         qty = math.floor(qty*100000000)/100000000
@@ -122,16 +122,16 @@ class Account(object):
 
         # 判断是否有足够资金下单
         if self.current_position[quote_currency].detail()['available'] < amount:
-            logger.warning('{} 不足,买入失败.'.format(quote_currency))
+            # logger.debug('{} 不足,买入失败.'.format(quote_currency))
             return
         # 判断是否小于最下下单精度、最小下单金额
         min_order_qty = self.context.min_order[exchange][symbol.lower()]['min_order_qty']
         min_order_amount = self.context.min_order[exchange][symbol.lower()]['min_order_qty']
         if qty < min_order_qty:
-            logger.warning('不足下单最小精度 {} {},买入失败.'.format(min_order_qty,base_currency.upper()))
+            logger.debug('不足下单最小精度 {} {},买入失败.'.format(min_order_qty,base_currency.upper()))
             return
         if amount < min_order_amount:
-            logger.warning('不足下单最小金额 {} {},买入失败.'.format(min_order_amount,quote_currency.upper()))
+            logger.debug('不足下单最小金额 {} {},买入失败.'.format(min_order_amount,quote_currency.upper()))
             return
 
         # 下单
@@ -142,7 +142,7 @@ class Account(object):
         match_engine(self.current_position, self.context, order)
         if not self.orders or self.orders[0]['create_time'] == self.context.current_datetime():
             self.orders.append(order.detail())
-        logger.info('{} 买入成功! 价格:{} 数量:{}'.format(base_currency, price, qty))
+        # logger.debug('{} 买入成功! 价格:{} 数量:{}'.format(base_currency, price, qty))
         # return order.detail()
         return order_id
 
@@ -428,17 +428,17 @@ class Account(object):
             raise Errors.INVALID_AMOUNT
 
         if base_currency not in self.current_position.keys():
-            logger.warning('没有 {} 资产,卖出失败.'.format(base_currency))
+            logger.debug('没有 {} 资产,卖出失败.'.format(base_currency))
             return
         base_min_qty = self.context.min_order[exchange][symbol.lower()]['min_order_qty']
         if self.current_position[base_currency].detail()['available'] < base_min_qty:
-            logger.warning('{} 不足下单最小精度 {} {},卖出失败.'.format(base_currency,'%.6f'%base_min_qty,base_currency.upper()))
+            logger.debug('{} 不足下单最小精度 {} {},卖出失败.'.format(base_currency,'%.6f'%base_min_qty,base_currency.upper()))
             return
         # 低于current_price才能卖出，高于current_price才能买入
-        current_price = self.context.get_price(symbol_exchange)
-        if price > current_price:
-            logger.warning('限价单价格需要小于等于市场价才能卖出,卖出失败.')
-            return
+        # current_price = self.context.get_price(symbol_exchange)
+        # if price > current_price:
+        #     logger.debug('限价单价格需要小于等于市场价才能卖出,卖出失败.')
+        #     return
 
         qty = math.floor((self.current_position[base_currency].detail()['available']*pct)*1000000)/1000000
         price = math.floor(price*1000000)/1000000
@@ -449,7 +449,7 @@ class Account(object):
         match_engine(self.current_position, self.context, order)
         if not self.orders or self.orders[0]['create_time'] == self.context.current_datetime():
             self.orders.append(order.detail())
-        logger.info('{} 卖出成功! 价格:{} 数量:{}'.format(base_currency, price, qty))
+        # logger.debug('{} 卖出成功! 价格:{} 数量:{}'.format(base_currency, price, qty))
         # return order.detail()
         return order_id
 
@@ -468,12 +468,12 @@ class Account(object):
             raise Errors.INVALID_PRICE
 
         if quote_currency not in self.current_position.keys():
-            logger.warning('没有 {} 资产,买入失败.'.format(quote_currency))
+            logger.debug('没有 {} 资产,买入失败.'.format(quote_currency))
             return
 
         quote_min_amount = self.context.min_order[exchange][symbol.lower()]['min_order_amount']
         if self.current_position[quote_currency].detail()['available'] < quote_min_amount:
-            logger.warning('{} 不足下单最小精度 {} {},买入失败.'.format(quote_currency,quote_min_amount,quote_currency.upper()))
+            logger.debug('{} 不足下单最小精度 {} {},买入失败.'.format(quote_currency,quote_min_amount,quote_currency.upper()))
             return
         qty = math.floor((self.current_position[quote_currency].detail()['available'] * pct)/price*1000000)/1000000
         if not isinstance(qty,(int,float)) or np.isnan(qty):
@@ -481,7 +481,7 @@ class Account(object):
         # 低于current_price才能卖出，高于current_price才能买入
         current_price = self.context.get_price(symbol_exchange)
         if price < current_price:
-            logger.warning('限价单价格需要大于等于市场价才能买入,买入失败.')
+            logger.debug('限价单价格需要大于等于市场价才能买入,买入失败.')
             return
 
         price = math.floor(price*1000000)/1000000
@@ -492,7 +492,7 @@ class Account(object):
         match_engine(self.current_position, self.context, order)
         if not self.orders or self.orders[0]['create_time'] == self.context.current_datetime():
             self.orders.append(order.detail())
-        logger.info('{} 买入成功! 价格:{} 数量:{}'.format(base_currency,price,qty))
+        # logger.debug('{} 买入成功! 价格:{} 数量:{}'.format(base_currency,price,qty))
         # return order.detail()
         return order_id
 

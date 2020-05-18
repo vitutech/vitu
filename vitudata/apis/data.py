@@ -11,7 +11,7 @@
 '''
 import datetime
 import json
-
+# import redis
 import h5py
 import sys
 
@@ -43,7 +43,7 @@ def get_path(exchange, symbol, freq, year):
 def __check_symbol_exists(symbol, exchange, freq):
     dir = Config.h5_root_dir() + '/' + exchange.lower()+ '/' + freq.lower() + '/' + symbol.replace('/', '')
     # dir = dir.lower()
-    print(dir)
+    # print(dir)
     return os.path.exists(dir)
 
 
@@ -60,7 +60,7 @@ def __get_redis_key(exchange, symbol, frequency):
     return f'ohlcv_{frequency}_{exchange}_{symbol.replace("/","").lower()}'
 
 
-def get_bars(symbol, exchange, start_date=None, end_date=None, frequency='1d', count=None):
+def get_bars(symbol, exchange, start_date=None, end_date=None, frequency='1d', timezone=1, count=None):
     '''
     获取标的行情数据
 
@@ -78,8 +78,16 @@ def get_bars(symbol, exchange, start_date=None, end_date=None, frequency='1d', c
         raise ParamsError("get_bars 不能同时指定 start_date 和 count 两个参数")
     if not __check_symbol_exists(symbol, exchange, frequency):
         raise SymbolNotSupported(f"交易所{exchange}频率为{frequency}的交易对{symbol}不在支持范围内")
-
     now = datetime.datetime.now(pytz.timezone('utc'))
+    differ=28800
+    if timezone==1 or timezone is None:
+        differ=28800 #默认北京与UTC的时差
+    elif isinstance(timezone,str):
+        now_utc=datetime.datetime.now(pytz.timezone('utc')).strftime('%Y-%m-%d %H:%M:%S')
+        now_loacl=datetime.datetime.now(pytz.timezone(timezone)).strftime('%Y-%m-%d %H:%M:%S') #本地时间格式
+        localstamp=datetime.datetime.strptime(now_loacl,'%Y-%m-%d %H:%M:%S').timestamp()
+        utcstamp=datetime.datetime.strptime(now_utc,'%Y-%m-%d %H:%M:%S').timestamp()
+        differ=round(localstamp-utcstamp)  #选取的timezone时间和utc时间的差（stamp按秒计算的差值）
     if end_date is None:
         end_dt = now
     else:
@@ -119,11 +127,11 @@ def get_bars(symbol, exchange, start_date=None, end_date=None, frequency='1d', c
     while True:
         end = start.replace(month=12, day=31)
         if frequency == '1m':
-            end = end.replace(hour=12, minute=59)
+            end = end.replace(hour=23, minute=59)
         if frequency == '5m':
-            end = end.replace(hour=12, minute=55)
+            end = end.replace(hour=23, minute=55)
 
-        if end > end_dt:
+        if end>end_dt:
             end = end_dt
         # read data bewteen start and end
         path = get_path(exchange, symbol, frequency, start.year)
@@ -148,9 +156,13 @@ def get_bars(symbol, exchange, start_date=None, end_date=None, frequency='1d', c
         if end >= end_dt:
             break
         start = end.replace(hour=0, minute=0) + datetime.timedelta(days=1)
+    result = result[result['timestamp'] >= 0] #保留timestamp 和ohlcv为0的那些行
 
-    result = result[result['timestamp'] > 0]
-    ## 判断是否有数据在redis中而不在h5中
+    result['timestamp']=result['timestamp']-differ
+    #换回成本地时间的时间戳
+   
+
+    # 判断是否有数据在redis中而不在h5中
     # if len(result) > 0:
     #     min_t = result[-1][0]
     # else:

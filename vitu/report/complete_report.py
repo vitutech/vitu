@@ -4,10 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 '''
 import datetime
+import random
 
 from vitu.report.report import Report
 from vitu.account.account_manager import AccountManager
-from vitu.utils.date_utils import timestamp2str
+from vitu.utils.date_utils import timestamp2str,str2datetime
 
 class CompleteReport(Report):
     def __init__(self, portfolio):
@@ -29,12 +30,54 @@ class CompleteReport(Report):
         dates = list()
         portfolio_position = dict()
         orders = dict()
+        benchmarks=self.benchmark 
         values.append(self.context.init_position_total)
         for date, pf in self.rebalance_history.items():
             values.append(sum([asset['total_amount'] for asset in pf['portfolio_position']['detail'].values()]))
             dates.append(date)
             portfolio_position[date] = pf['portfolio_position']
             orders[date] = pf['orders']
+        date1=[]
+        value1=[]
+        portfolio_position1=dict()
+        orders1 = dict()
+        freq1=self.context.frequency
+        if freq1 in ['d','1d','day','1day']:
+            for i, v in enumerate(dates):
+                if v in benchmarks['timestamp'].values:
+                   date1.append(dates[i])
+                   value1.append(values[i])
+                   portfolio_position1[dates[i]]= portfolio_position[dates[i]]
+                   orders1[dates[i]] = orders[dates[i]] 
+        else:
+            for i, v in enumerate(dates):
+                if v in benchmarks['timestamp'].values:
+                    countbar=0
+                    maxnum=random.uniform(5,10)
+                    date1.append(dates[i])
+                    value1.append(values[i])
+                    portfolio_position1[dates[i]]= portfolio_position[dates[i]]
+                if  orders[dates[i]]: 
+                    currentdate=str2datetime(dates[i]).replace(hour=0, minute=0, second=0, microsecond=0)
+                    if bool(orders1):
+                       if (str(currentdate)) not in orders1.keys():
+                          orders1[str(currentdate)]=[]
+                       tempdate=list(orders1.keys())[-1]
+                       orderdate=str2datetime(tempdate).replace(hour=0, minute=0, second=0, microsecond=0)
+                       if currentdate==orderdate:
+                          countbar+=1
+                          if countbar<=maxnum: 
+                            orders1[str(currentdate)].append(orders[dates[i]][0])
+                       else: 
+                            orders1[str(currentdate)].append(orders[dates[i]][0])
+                    else:
+                        currentdate=str2datetime(dates[i]).replace(hour=0, minute=0, second=0, microsecond=0) 
+                        orders1[str(currentdate)]=[]
+                        orders1[str(currentdate)].append(orders[dates[i]][0])
+        dates=date1
+        values=value1
+        portfolio_position=portfolio_position1
+        orders=orders1
         return dates,values,portfolio_position,orders
 
     def get_cross_months(self, start_date, end_date):
@@ -152,8 +195,16 @@ class CompleteReport(Report):
                 date_format = "{}-{}".format(monthly[num][0],monthly[num][1])
             left = indexs[num]
             right = indexs[num+month]
+            if left>0 :
+               left-=1
+               right-=1
+               
             if right == left:
-                right = None
+                if right==len(st_returns):
+                    left-=2
+                    right-=1
+                else:
+                    left-=1 
             report[date_format] = self.risk_metrics(st_returns[left:right], bm_returns[left:right])
 
         new_report = {
@@ -183,7 +234,7 @@ class CompleteReport(Report):
 
     def run(self):
         import time
-        start1 = time.time()
+        # start1 = time.time()
 
         self.dates,self.values,self.portfolio_positions,self.orders = self.get_dates_values_positions_orders()
         self.bm_values = self.get_benchmark_values(self.dates)
@@ -237,7 +288,6 @@ class CompleteReport(Report):
         orders_list = []
         for _,orders in self.orders.items():
             orders_list.extend(orders)
-        # print(orders_list)
 
         filled_price = []
         filled_qty = []
@@ -320,86 +370,87 @@ class CompleteReport(Report):
             account_first = True
 
             for date, portfolio in self.rebalance_history.items():
-                last_date = str(datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S') - datetime.timedelta(days=1))
-                asset_value = dict()
-                # 计算每个account的各个asset的last_profit_and_loss
-                for asset in portfolio["portfolio_position"]['detail'].values():
-                    if name in asset["consist_of"].keys():
-                        asset_value[asset["asset"]] = asset["consist_of"][name]
-                        # if account_first:
-                        #     last_profit_and_loss = (asset["consist_of"][name]['amount'] / self.context.init_portfolio_position[asset["asset"]]["consist_of"][name]['amount']) - 1
-                        #     asset_value[asset["asset"]]['last_profit_and_loss'] = round(last_profit_and_loss, 4)
-                        if account_first:
-                            asset_value[asset["asset"]]['last_profit_and_loss'] = 0
-                        else:
-                            try:
-                                last_profit_and_loss = (asset["consist_of"][name]['amount'] / self.rebalance_history[last_date]["portfolio_position"]['detail'][asset["asset"]]["consist_of"][name]['amount']) - 1
-                                asset_value[asset["asset"]]['last_profit_and_loss'] = round(last_profit_and_loss, 4)
-                            except:
+                if date in self.benchmark['timestamp'].values:
+                    last_date = str(datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S') - datetime.timedelta(days=1))
+                    asset_value = dict()
+                    # 计算每个account的各个asset的last_profit_and_loss
+                    for asset in portfolio["portfolio_position"]['detail'].values():
+                        if name in asset["consist_of"].keys():
+                            asset_value[asset["asset"]] = asset["consist_of"][name]
+                            # if account_first:
+                            #     last_profit_and_loss = (asset["consist_of"][name]['amount'] / self.context.init_portfolio_position[asset["asset"]]["consist_of"][name]['amount']) - 1
+                            #     asset_value[asset["asset"]]['last_profit_and_loss'] = round(last_profit_and_loss, 4)
+                            if account_first:
                                 asset_value[asset["asset"]]['last_profit_and_loss'] = 0
+                            else:
+                                try:
+                                    last_profit_and_loss = (asset["consist_of"][name]['amount'] / self.rebalance_history[last_date]["portfolio_position"]['detail'][asset["asset"]]["consist_of"][name]['amount']) - 1
+                                    asset_value[asset["asset"]]['last_profit_and_loss'] = round(last_profit_and_loss, 4)
+                                except:
+                                    asset_value[asset["asset"]]['last_profit_and_loss'] = 0
 
 
-                        # 买入数量、买入均价、卖出数量、卖出均价
-                        # for d, orders in self.orders.items():
-                        #     if date == d:
-                        #         buy_avg_price = []
-                        #         buy_qty = []
-                        #         sell_avg_price = []
-                        #         sell_qty = []
-                        #         for order in orders:
-                        #             if order['instrument'].split('/')[0].split('/')[0] == asset["asset"]:
-                        #                 if order['side'] == 'buy':
-                        #                     buy_avg_price.append(order['avg_price'])
-                        #                     buy_qty.append(order['filled_qty'])
-                        #                 elif order['side'] == 'buy':
-                        #                     sell_avg_price.append(order['avg_price'])
-                        #                     sell_qty.append(order['filled_qty'])
-                        #         buy = {'buy_avg_price': np.mean(buy_avg_price) if buy_avg_price else 0,
-                        #                'buy_qty': np.sum(buy_qty) if buy_qty else 0}
-                        #         sell = {'sell_avg_price': np.mean(sell_avg_price) if sell_avg_price else 0,
-                        #                 'sell_qty': np.sum(sell_qty) if sell_qty else 0}
-                        #         asset_value[asset["asset"]]['buy'] = buy
-                        #         asset_value[asset["asset"]]['sell'] = sell
+                            # 买入数量、买入均价、卖出数量、卖出均价
+                            # for d, orders in self.orders.items():
+                            #     if date == d:
+                            #         buy_avg_price = []
+                            #         buy_qty = []
+                            #         sell_avg_price = []
+                            #         sell_qty = []
+                            #         for order in orders:
+                            #             if order['instrument'].split('/')[0].split('/')[0] == asset["asset"]:
+                            #                 if order['side'] == 'buy':
+                            #                     buy_avg_price.append(order['avg_price'])
+                            #                     buy_qty.append(order['filled_qty'])
+                            #                 elif order['side'] == 'buy':
+                            #                     sell_avg_price.append(order['avg_price'])
+                            #                     sell_qty.append(order['filled_qty'])
+                            #         buy = {'buy_avg_price': np.mean(buy_avg_price) if buy_avg_price else 0,
+                            #                'buy_qty': np.sum(buy_qty) if buy_qty else 0}
+                            #         sell = {'sell_avg_price': np.mean(sell_avg_price) if sell_avg_price else 0,
+                            #                 'sell_qty': np.sum(sell_qty) if sell_qty else 0}
+                            #         asset_value[asset["asset"]]['buy'] = buy
+                            #         asset_value[asset["asset"]]['sell'] = sell
 
-                account_first = False
-                position = {"detail": dict(), "total": dict()}
-                position['detail'] = asset_value
-                new_report[name_position][date] = position
+                    account_first = False
+                    position = {"detail": dict(), "total": dict()}
+                    position['detail'] = asset_value
+                    new_report[name_position][date] = position
 
-                # 计算amount
-                amount = 0
-                for asset,value in asset_value.items():
-                    amount += value['amount']
-                total = {"assets":list(asset_value.keys()),
-                         "amount":round(amount,4)}
-                new_report[name_position][date]['total'] = total
+                    # 计算amount
+                    amount = 0
+                    for asset,value in asset_value.items():
+                        amount += value['amount']
+                    total = {"assets":list(asset_value.keys()),
+                            "amount":round(amount,4)}
+                    new_report[name_position][date]['total'] = total
 
-                # 计算所占百分比
-                for asset, value in asset_value.items():
-                    value['percentage_of_positions'] = round(value['amount']/new_report[name_position][date]['total']['amount'], 4)
+                    # 计算所占百分比
+                    for asset, value in asset_value.items():
+                        value['percentage_of_positions'] = round(value['amount']/new_report[name_position][date]['total']['amount'], 4)
 
-            # 计算每个account的总的last_profit_and_loss
-            date_first = True
-            for date,value in new_report[name_position].items():
-                last_date = str(datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S') - datetime.timedelta(days=1))
-                if date_first:
-                    last_profit_and_loss = (value['total']['amount']/self.context.init_total_account_position[name_position])-1
-                else:
-                    last_profit_and_loss = (value['total']['amount']/new_report[name_position][last_date]['total'])-1
-                value['total']['last_profit_and_loss'] = round(last_profit_and_loss, 4)
+                # 计算每个account的总的last_profit_and_loss
+                date_first = True
+                for date,value in new_report[name_position].items():
+                    last_date = str(datetime.datetime.strptime(date, '%Y-%m-%d %H:%M:%S') - datetime.timedelta(days=1))
+                    if date_first:
+                        last_profit_and_loss = (value['total']['amount']/self.context.init_total_account_position[name_position])-1
+                    else:
+                        last_profit_and_loss = (value['total']['amount']/new_report[name_position][last_date]['total'])-1
+                    value['total']['last_profit_and_loss'] = round(last_profit_and_loss, 4)
 
-        # for name in self.context.accounts_name:
-        #     name_position = "{}_position".format(name)
-        #     new_report[name_position] = dict()
-        #     for date, pf in self.rebalance_history.items():
-        #         asset_value = dict()
-        #         assets = list(pf["portfolio_position"].values())
-        #         assets.pop()
-        #         for asset in assets:
-        #             if name in asset["consist_of"].keys():
-        #                 asset_value[asset["asset"]] = asset["consist_of"][name]
-        #         new_report[name_position][date] = asset_value
-        # print("【name_position耗时】：{}".format(time.time()-start22))
+            # for name in self.context.accounts_name:
+            #     name_position = "{}_position".format(name)
+            #     new_report[name_position] = dict()
+            #     for date, pf in self.rebalance_history.items():
+            #         asset_value = dict()
+            #         assets = list(pf["portfolio_position"].values())
+            #         assets.pop()
+            #         for asset in assets:
+            #             if name in asset["consist_of"].keys():
+            #                 asset_value[asset["asset"]] = asset["consist_of"][name]
+            #         new_report[name_position][date] = asset_value
+            # print("【name_position耗时】：{}".format(time.time()-start22))
 
 
 
