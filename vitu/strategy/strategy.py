@@ -113,8 +113,8 @@ class Strategy(object):
         else:
            self.day_date=get_day_dates(self.start, self.end)
         # 先输出report的dates信息，画图用
-        output({"display_type": "strategy",
-              "dates":self.day_date})
+        #output({"display_type": "strategy",
+          #    "dates":self.day_date})
 
         try:
             self.initialize(self.context)
