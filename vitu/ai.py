@@ -102,7 +102,7 @@ async def _report(strategy):
                 strategy.portfolio.context.completed_time = round(clock.run_end - clock.run_start,4)
                 # print('【handle总耗时】：{} s'.format(strategy.portfolio.context.completed_time))
                 # strategy.simple_report()
-                strategy.complete_report()
+                #strategy.complete_report()
                 strategy.simplereport_excel()
                 break
 
