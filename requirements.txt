@@ -1,4 +1,4 @@
-numpy==1.15.1
+numpy==1.22.0
 pandas==0.23.4
 h5pyd==0.3.3
 uuid==1.30
